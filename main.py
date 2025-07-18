@@ -1,24 +1,41 @@
-from bcrypt import gensalt,hashpw,checkpw
+from bcrypt import gensalt, hashpw, checkpw
+from fastapi import FastAPI, Form, HTTPException
+from pydantic import BaseModel, Field
+from typing import Annotated
+import uvicorn
 
-def hash_password(password):
-    password_enc = password.encode()
+class Password(BaseModel):
+    password: str = Field(min_length=3, max_length=50)
+
+def hash_password(password: str):
+    password_enc = password.encode('utf-8')
     salt = gensalt()
-    hash_password = hashpw(password_enc,salt)
-    return hash_password
+    hashed_password = hashpw(password_enc, salt)
+    return hashed_password.decode('utf-8')  
 
-def verify_password(password, input_password) -> bool:
-    input_password_enc = input_password.encode()
-    return checkpw(input_password_enc,password)
+def verify_password(hashed_password: str, input_password: str) -> bool:
+    try:
+        return checkpw(input_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
-print("Здравствуйте! Это программа для хэширования и проверки вашего пароля.")
+app = FastAPI()
 
-password = input("Введите ваш пароль: ")
-hashed_password = hash_password(password)
+@app.post("/create_password")
+async def create_password(
+    password: Annotated[str, Form(min_length=3, max_length=50)],
+    password_check: Annotated[str, Form(min_length=3, max_length=50)]
+):
+    if password != password_check:
+        raise HTTPException(status_code=400, detail="Passwords don't match")
+    
+    hashed_password = hash_password(password)
+    
 
-print("Давайте проверим ваш пароль.")
-password_check = input("Введите пароль повторно: ")
+    if not verify_password(hashed_password, password):
+        raise HTTPException(status_code=500, detail="Hashing failed")
+    
+    return {"message": "Password hashed successfully", "password_hash": hashed_password}
 
-if verify_password(hashed_password,password_check) == True:
-    print(f"Ваш пароль верный! Ваш хэшированный пароль: {hashed_password}")
-else:
-    print("Ваш пароль не верный.")
+if __name__ == "__main__":
+    uvicorn.run("main:app", reload=False, port=1222)
