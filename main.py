@@ -2,25 +2,40 @@ from fastapi import FastAPI, Form, HTTPException
 from typing import Annotated
 import uvicorn
 from hash_functions import hash_password,verify_password
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from models import Base, engine
 
 
-app = FastAPI()
-
-@app.post("/create_password")
-async def create_password(
-    password: Annotated[str, Form(min_length=3, max_length=50)],
-    password_check: Annotated[str, Form(min_length=3, max_length=50)]
-):
-    if password != password_check:
-        raise HTTPException(status_code=400, detail="Passwords don't match")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Создаем таблицы при старте
+    print("🟢 Создаем таблицы в БД...")
+    Base.metadata.create_all(bind=engine)
     
-    hashed_password = hash_password(password)
+    # 2. Здесь работает приложение
+    yield
     
+    # 3. Закрываем соединения при завершении
+    print("🔴 Закрываем соединение с БД...")
+    engine.dispose()
 
-    if not verify_password(hashed_password, password):
-        raise HTTPException(status_code=500, detail="Hashing failed")
-    
-    return {"message": "Password hashed successfully", "password_hash": hashed_password}
+app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://127.0.0.1:1222",  # Основной домен API
+    "http://localhost:1222",   # Альтернативный адрес
+    "http://localhost:3002",   # Для фронтенда (React/Vue)
+    "http://127.0.0.1:3002",   # Альтернативный адрес фронтенда
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=False, port=1222)
