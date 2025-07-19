@@ -55,3 +55,7 @@ async def get_passwords(
 ):
     passwords = db.query(Password).all()
     return passwords
+
+@router.get("/")
+async def home():
+    return "Hello! Go on /docs, here is interface. Enjoy using it! Bye!"
