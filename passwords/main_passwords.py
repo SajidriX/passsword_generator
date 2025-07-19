@@ -4,7 +4,7 @@ from typing import Annotated
 from hash_functions import verify_password,hash_password
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from schemas import SPassword_get
+from schemas import SPassword
 
 
 router = APIRouter()
@@ -14,26 +14,25 @@ limiter = Limiter(key_func=get_remote_address,default_limits=["6/minute"])
 @router.post("/create_password")
 async def create_password(
     request: Request,
-    password: Annotated[str, Form(min_length=8, max_length=128)], 
-    password_check: Annotated[str, Form(...)],
-    service: Annotated[str, Form(min_length=3,max_length=500)],
-    description: Annotated[str, Form(min_length=3,max_length=500)],
+    password_data: SPassword,
+    password_check: Annotated[str, Body(min_length=3,max_length=128)],
     db: Session = Depends(init_db)
 ):
-    if password != password_check:
+    if password_data.password != password_check:
         raise HTTPException(400, "Passwords do not match")
     
-    if db.query(Password).filter(Password.password == hash_password(password)).first():
+    if db.query(Password).filter(Password.password == hash_password(password_data.password)).first():
         raise HTTPException(400, "Password already exists")
     
-    hashed_password = hash_password(password)
+    hashed_password = hash_password(password_data.password)
     new_password = Password(
-        password = hashed_password,
-        service = service,
-        description = description
+            service = password_data.service,
+            password = hashed_password,
+            description = password_data.description
         )
     db.add(new_password)
     db.commit()
+    db.refresh(new_password)
     
     return {"status": "password_created"}
 
