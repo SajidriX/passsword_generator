@@ -12,7 +12,6 @@ limiter = Limiter(key_func=get_remote_address,default_limits=["6/minute"])
 
 
 @router.post("/create_password")
-@limiter.limit()
 async def create_password(
     request: Request,
     password: Annotated[str, Form(min_length=8, max_length=128)], 
