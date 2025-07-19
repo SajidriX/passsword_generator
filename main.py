@@ -5,6 +5,7 @@ from hash_functions import hash_password,verify_password
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from models import Base, engine
+from passwords.main_passwords import router as password_router
 
 
 @asynccontextmanager
@@ -36,6 +37,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(password_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=False, port=1222)

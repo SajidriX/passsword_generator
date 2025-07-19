@@ -14,8 +14,9 @@ Base = declarative_base()
 class Password(Base):
     __tablename__ = "passwords"
 
-    id = Column(Integer,primary_key=True,index=True)
-    password = Column(String(500))
+    service = Column(String(250))
+    password = Column(String(500), primary_key = True)
+    description = Column(String(500))
 
 def init_db():
     db = SessionLocal()
