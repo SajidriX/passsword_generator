@@ -11,7 +11,7 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address,default_limits=["6/minute"])
 
 
-@router.post("/create_password")
+@router.post("/create_password", tags=["Password"], description="Creates and hash password, with service and description")
 async def create_password(
     request: Request,
     password_data: SPassword,
@@ -36,7 +36,7 @@ async def create_password(
     
     return {"status": "password_created"}
 
-@router.delete("/delete_password")
+@router.delete("/delete_password", tags=["Password"], description="Deletes password")
 async def delete_password(
     password: Annotated[str, Form(min_length=3,max_length=500)],
     db:Session = Depends(init_db)
@@ -49,13 +49,13 @@ async def delete_password(
     db.commit()
     return {"status":"password deleted"}
 
-@router.get("/get_password")
+@router.get("/get_password", tags=["Password"], description="Get list of passwords")
 async def get_passwords(
     db: Session = Depends(init_db)
 ):
     passwords = db.query(Password).all()
     return passwords
 
-@router.get("/")
+@router.get("/", tags = ["Home"], description="Home page")
 async def home():
     return "Hello! Go on /docs, here is interface. Enjoy using it! Bye!"

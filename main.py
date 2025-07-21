@@ -10,14 +10,11 @@ from passwords.main_passwords import router as password_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Создаем таблицы при старте
     print("🟢 Создаем таблицы в БД...")
     Base.metadata.create_all(bind=engine)
     
-    # 2. Здесь работает приложение
     yield
     
-    # 3. Закрываем соединения при завершении
     print("🔴 Закрываем соединение с БД...")
     engine.dispose()
 
