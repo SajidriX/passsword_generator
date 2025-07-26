@@ -7,6 +7,7 @@ from slowapi.util import get_remote_address
 from schemas import SPassword
 
 
+
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address,default_limits=["6/minute"])
 
