@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from models import Base, engine
 from passwords.main_passwords import router as password_router
-from models import Password,init_db,Session
+from models import Password,Session,get_db
 
 
 @asynccontextmanager
@@ -30,12 +30,13 @@ query = QueryType()
 
 
 @query.field("getPassword")
-def resolve_passwords(*_,db:Session = Depends(init_db)):
-    try:
-        passwords = db.query(Password).all()
-        return passwords
-    finally:
-        db.close()
+def resolve_passwords(*_):
+    with get_db() as db:
+        try:
+            passwords = db.query(Password).all()
+            return passwords
+        finally:
+            db.close()
 
 schema = make_executable_schema(
     """
@@ -46,7 +47,7 @@ type Password{
 }
 
 type Query{
-    getPassword: [Password!]!
+    getPassword: [Password]
 }
     """,
     query

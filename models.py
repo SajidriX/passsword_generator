@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey
+from contextlib import contextmanager
 
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./task.db"
@@ -19,6 +20,14 @@ class Password(Base):
     description = Column(String(500))
 
 def init_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@contextmanager
+def get_db():
     db = SessionLocal()
     try:
         yield db
