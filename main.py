@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form, HTTPException, Depends,Request
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 import uvicorn
-from ariadne import QueryType, make_executable_schema, graphql_sync
+from ariadne import QueryType, make_executable_schema, graphql_sync,MutationType
 from ariadne.asgi import GraphQL
 from ariadne.explorer import ExplorerGraphiQL
 from hash_functions import hash_password,verify_password
@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from models import Base, engine
 from passwords.main_passwords import router as password_router
-from models import Password,Session,get_db
+from models import Password,Session,get_db,engine
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 query = QueryType()
+mutation = MutationType()
 
 
 @query.field("getPassword")
@@ -38,6 +39,37 @@ def resolve_passwords(*_):
         finally:
             db.close()
 
+@query.field("getPasswordByService")
+def resolve_password_by_id(_, info, service: str):
+    with get_db() as db:
+        password = db.query(Password).filter(Password.service == service).first()
+        if not password:
+            raise Exception("Password not found")
+        return password
+
+@query.field("getPasswordById")
+def resolve_password_by_id(_, info, id: int):
+    with get_db() as db:
+        return db.query(Password).filter(Password.id == id).first() 
+
+@mutation.field("passwordCreate")
+def resolve_create_passwords(_,info, input):
+    with get_db() as db:
+        try:
+            new_password = Password(
+                password = hash_password(input["password"]),
+                service = input["service"],
+                description = input["description"]
+            )
+
+            db.add(new_password)
+            db.commit()
+            db.refresh(new_password)
+
+            return new_password
+        finally:
+            db.close()
+
 schema = make_executable_schema(
     """
 type Password{
@@ -46,11 +78,24 @@ type Password{
     description: String!
 }
 
+input PasswordCreate{
+    password: String!
+    service: String!
+    description: String!
+}
+
 type Query{
-    getPassword: [Password]
+    getPassword: [Password!]!
+    getPasswordByService(service: String!): Password
+    getPasswordById(id: ID!): Password 
+}
+
+type Mutation{
+    passwordCreate(input: PasswordCreate!): Password!
 }
     """,
-    query
+    query,
+    mutation
 )
 
 origins = [
@@ -70,7 +115,7 @@ app.add_middleware(
 
 explorer_html = ExplorerGraphiQL().html(None)
 
-@app.post("/graphql")
+@app.post("/graphql", tags=["Password", "GraphQL"],description="GraphQL version")
 async def graphql_route(
     request: Request,
     db: Session = Depends(lambda: Session())
@@ -83,13 +128,13 @@ async def graphql_route(
     )
     return result if success else {"error": str(result)}
 
-@app.get("/graphql")
+@app.get("/graphql",tags=["GraphQL"])
 async def graphql_explorer():
     return HTMLResponse(explorer_html)
 
 
 app.include_router(password_router)
-app.mount("/graphql", GraphQL(schema=schema, debug=True, ))
+app.mount("/graphql", GraphQL(schema=schema, debug=True, context_value=lambda req: {"db": Session(bind=engine)}))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=False, port=1222)
