@@ -156,4 +156,4 @@ app.include_router(password_router)
 app.mount("/graphql", GraphQL(schema=schema, debug=True, context_value=lambda req: {"db": Session(bind=engine)}))
 
 if __name__ == "__main__":
-    run("main:app", reload=False, port=1222)
+    run("main:app", reload=False, port=1222,ws_max_queue=64)
