@@ -4,6 +4,19 @@ type Password{
     description: String!
 }
 
+input PasswordCreate{
+    password: String!
+    service: String!
+    description: String!
+}
+
 type Query{
-    getPassword: Password
+    getPassword: [Password!]!
+    getPasswordByService(service: String!): Password
+    getPasswordById(id: ID!): Password 
+}
+
+type Mutation{
+    passwordCreate(input: PasswordCreate!): Password!
+    passwordMake (input: PasswordCreate!): Password!
 }
