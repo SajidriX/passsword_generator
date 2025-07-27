@@ -37,6 +37,31 @@ async def create_password(
     
     return {"status": "password_created"}
 
+@router.post("/password_create",tags=["Password"],description="creates password without hashing")
+async def password_create(
+    request: Request,
+    password_data: SPassword,
+    password_check: Annotated[str, Body(min_length=3,max_length=128)],
+    db: Session = Depends(init_db)
+):
+    if password_data.password != password_check:
+        raise HTTPException(400, "Passwords do not match")
+    
+    if db.query(Password).filter(Password.password == hash_password(password_data.password)).first():
+        raise HTTPException(400, "Password already exists")
+    
+    new_password = Password(
+            service = password_data.service,
+            password = password_data.password,
+            description = password_data.description
+        )
+    db.add(new_password)
+    db.commit()
+    db.refresh(new_password)
+    
+    return {"status": "password created without hashing"}
+
+
 @router.delete("/delete_password", tags=["Password"], description="Deletes password")
 async def delete_password(
     password: Annotated[str, Form(min_length=3,max_length=500)],

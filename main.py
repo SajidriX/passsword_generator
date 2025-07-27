@@ -70,6 +70,24 @@ def resolve_create_passwords(_,info, input):
         finally:
             db.close()
 
+@mutation.field("passwordMake")
+def resolve_make_passwords(_,info,input):
+    with get_db() as db:
+        try:
+            password = Password(
+                password = input["password"],
+                service = input["service"],
+                description = input["description"]
+            )
+
+            db.add(password)
+            db.commit()
+            db.refresh(password)
+            return password
+        
+        finally:
+            db.close()
+
 schema = make_executable_schema(
     """
 type Password{
@@ -92,6 +110,7 @@ type Query{
 
 type Mutation{
     passwordCreate(input: PasswordCreate!): Password!
+    passwordMake (input: PasswordCreate!): Password!
 }
     """,
     query,
