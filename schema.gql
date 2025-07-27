@@ -1,0 +1,9 @@
+type Password{
+    password: String!
+    service: String!
+    description: String!
+}
+
+type Query{
+    getPassword: Password
+}
