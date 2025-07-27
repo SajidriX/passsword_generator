@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form, HTTPException, Depends,Request
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-import uvicorn
+from uvicorn import run
 from ariadne import QueryType, make_executable_schema, graphql_sync,MutationType
 from ariadne.asgi import GraphQL
 from ariadne.explorer import ExplorerGraphiQL
@@ -156,4 +156,4 @@ app.include_router(password_router)
 app.mount("/graphql", GraphQL(schema=schema, debug=True, context_value=lambda req: {"db": Session(bind=engine)}))
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=False, port=1222)
+    run("main:app", reload=False, port=1222)
