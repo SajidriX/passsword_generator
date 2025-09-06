@@ -47,7 +47,7 @@ async def password_create(
     if password_data.password != password_check:
         raise HTTPException(400, "Passwords do not match")
     
-    if db.query(Password).filter(Password.password == hash_password(password_data.password)).first():
+    if db.query(Password).filter(Password.password == hash_password(password_data.password)).first() and db.query(Password).filter(Password.password == password_check).first():
         raise HTTPException(400, "Password already exists")
     
     new_password = Password(
