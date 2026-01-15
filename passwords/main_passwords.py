@@ -11,7 +11,6 @@ from schemas import SPassword
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address,default_limits=["6/minute"])
 
-
 @router.post("/create_password", tags=["Password"], description="Creates and hash password, with service and description")
 async def create_password(
     request: Request,

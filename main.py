@@ -40,7 +40,7 @@ def resolve_passwords(*_):
             db.close()
 
 @query.field("getPasswordByService")
-def resolve_password_by_id(_, info, service: str):
+def resolve_password_by_service(_, info, service: str):
     with get_db() as db:
         password = db.query(Password).filter(Password.service == service).first()
         if not password:
